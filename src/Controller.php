@@ -109,7 +109,7 @@ class Controller extends BaseController {
 
         if (count($where) > 0) {
             $model = $this->getModel();
-            if (Instance::hasTrait($model, '\Jedrzej\Searchable\SearchableTrait')) {
+            if (Instance::hasTrait($model, 'Jedrzej\Searchable\SearchableTrait')) {
                 $method = 'filtered';
             } else {
                 $method = 'where';
