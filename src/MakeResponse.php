@@ -16,16 +16,20 @@ use Illuminate\Database\Eloquent\Collection;
 trait MakeResponse {
 
     protected function makeResponse($data) {
-        if ($this->requestAjax() && Instance::hasInterface($this, HasResource::class)) {
-            return $this->makeResource($this->resource(), $data);
+        if ($this->requestAjax()) {
+            $resource = Resource::class;
+            if (Instance::hasInterface($this, HasResource::class)) {
+                $resource = $this->resource();
+            }
+            return $this->makeResource($resource, $data);
         }
         return $data;
     }
 
     private function makeResource($resourceClass, $data) {
-        if(Instance::instanceOf($data, Collection::class)) {
+        if (Instance::instanceOf($data, Collection::class)) {
             return $resourceClass::collection($data);
-        }else{
+        } else {
             return new $resourceClass($data);
         }
     }
