@@ -8,7 +8,7 @@ use Larangular\RoutingController\{Contracts\RecursiveStoreable,
     MethodRequest\MethodRequest,
     PaginableRequest,
     Model as RoutingModel};
-use Larangular\Support\Instance;
+use Larangular\Support\Facades\Instance;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
