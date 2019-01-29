@@ -8,7 +8,7 @@
 
 namespace Larangular\RoutingController;
 
-use Larangular\Support\Instance;
+use Larangular\Support\Facades\Instance;
 use Larangular\RoutingController\Contracts\HasResource;
 use Illuminate\Support\Facades\Request as RequestFacade;
 use Illuminate\Database\Eloquent\Collection;
