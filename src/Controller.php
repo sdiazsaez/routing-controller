@@ -58,6 +58,11 @@ class Controller extends BaseController {
         $query = $this->queryBuilderRequest($query, $queryParameters);
         $query = $this->paginableRequestApply($query, $pagination);
         //return $this->makeResponse($query->paginate(10));
+
+        if(Instance::hasTrait($this->getModel(), 'Jedrzej\Withable\WithableTrait')) {
+            $query = $query->withRelations();
+        }
+
         return $this->makeResponse($this->queryFetch($query));
     }
 
