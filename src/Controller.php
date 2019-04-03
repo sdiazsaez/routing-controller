@@ -20,15 +20,7 @@ use \Illuminate\Database\Eloquent\{Model,
     Collection};
 
 class Controller extends BaseController {
-    use RoutingRequests,
-        RecursiveStore,
-        QueryBuilderRequest,
-        PaginableRequest,
-        MethodRequest,
-        MakeResponse,
-        AuthorizesRequests,
-        DispatchesJobs,
-        ValidatesRequests;
+    use RoutingRequests, RecursiveStore, QueryBuilderRequest, PaginableRequest, MethodRequest, MakeResponse, AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
     protected $getMethods = ['count'];
     private   $instanceModel;
@@ -57,11 +49,7 @@ class Controller extends BaseController {
         $query = $this->getEntries($where);
         $query = $this->queryBuilderRequest($query, $queryParameters);
         $query = $this->paginableRequestApply($query, $pagination);
-        //return $this->makeResponse($query->paginate(10));
-
-        if(Instance::hasTrait($this->getModel(), 'Jedrzej\Withable\WithableTrait')) {
-            $query = $query->withRelations();
-        }
+        $query = $this->withRelations($query);
 
         return $this->makeResponse($this->queryFetch($query));
     }
@@ -88,7 +76,9 @@ class Controller extends BaseController {
         $response = [
             'data' => [
                 'id'         => $object->id,
-                'trashed'    => ($canSoftDelete) ? $object->trashed() : true,
+                'trashed'    => ($canSoftDelete)
+                    ? $object->trashed()
+                    : true,
                 'softdelete' => $canSoftDelete,
             ],
         ];
@@ -164,7 +154,9 @@ class Controller extends BaseController {
     public function getObject($data) {
         $method = '';
         $q = null;
-        $id = (isset($data['id']) ? $data['id'] : false);
+        $id = (isset($data['id'])
+            ? $data['id']
+            : false);
         if ($id !== false) {
             $method = 'find';
             $q = $id;
@@ -187,24 +179,22 @@ class Controller extends BaseController {
     }
 
     private function modelInstanceRequest($method, $data = null) {
-        return (is_null($data)) ? \call_user_func(
-            [
+        return (is_null($data))
+            ? \call_user_func([
+                    $this->instanceModel(),
+                    $method,
+                ])
+            : \call_user_func([
                 $this->instanceModel(),
                 $method,
-            ]
-        ) : \call_user_func(
-            [
-                $this->instanceModel(),
-                $method,
-            ], $data
-        );
+            ], $data);
     }
 
     private function modelRequest($method, $data = null) {
         //TODO implement pagination
-        $query = (is_null($data)) ? \call_user_func($this->getModel() . '::' . $method) : \call_user_func(
-            $this->getModel() . '::' . $method, $data
-        );
+        $query = (is_null($data))
+            ? \call_user_func($this->getModel() . '::' . $method)
+            : \call_user_func($this->getModel() . '::' . $method, $data);
 
         return $query;
     }
@@ -254,15 +244,26 @@ class Controller extends BaseController {
         return $this->instanceModel()
                     ->where('updated_at', '>', $request->input($key))
                     ->get();
-        return ($request->has($key)) ? $this->instanceModel()
-                                            ->where('updated_at', '>', $request->input($key))
-                                            ->get() : $this->instanceModel()
-                                                           ->all();
+        return ($request->has($key))
+            ? $this->instanceModel()
+                   ->where('updated_at', '>', $request->input($key))
+                   ->get()
+            : $this->instanceModel()
+                   ->all();
         //return $this->modelRequest('where', ['updated_at' => ['>', '2017-01-22 12:30:50']])->get();
     }
 
     private function requestCanBePaginated($method) {
         return ($method === 'where' || $method === 'all');
+    }
+
+    private function withRelations(&$query) {
+        if (Instance::hasTrait($this->getModel(), 'Jedrzej\Withable\WithableTrait') && method_exists($query,
+                'withRelations')) {
+            $query = $query->withRelations();
+        }
+
+        return $query;
     }
 }
 
