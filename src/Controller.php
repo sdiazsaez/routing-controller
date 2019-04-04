@@ -100,7 +100,7 @@ class Controller extends BaseController {
     }
 
     protected function getEntries($where = []) {
-        $method = 'all';
+        $method = 'query';
 
         if (count($where) > 0) {
             $model = $this->getModel();
@@ -258,8 +258,7 @@ class Controller extends BaseController {
     }
 
     private function withRelations(&$query) {
-        if (Instance::hasTrait($this->getModel(), 'Jedrzej\Withable\WithableTrait') && method_exists($query,
-                'withRelations')) {
+        if (Instance::hasTrait($this->getModel(), 'Jedrzej\Withable\WithableTrait') && Instance::instanceOf($query, Builder::class)) {
             $query = $query->withRelations();
         }
 

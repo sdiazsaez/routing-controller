@@ -8,6 +8,8 @@
 
 namespace Larangular\RoutingController;
 
+use Illuminate\Support\Arr;
+
 trait PaginableRequest {
 
     protected function paginableRequestParameters(&$parameters): array {
@@ -23,7 +25,7 @@ trait PaginableRequest {
     }
 
     protected function paginableRequestApply(&$query, $parameters) {
-        $paginateKey = array_first($this->keywords());
+        $paginateKey = Arr::first($this->keywords());
         if(array_key_exists($paginateKey, $parameters)) {
             $query = $query->paginate($parameters[$paginateKey]);
         }
