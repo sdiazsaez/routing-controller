@@ -36,6 +36,7 @@ trait QueryBuilderRequest {
             'where',
             'select',
             'limit',
+            'with'
         ];
     }
 
