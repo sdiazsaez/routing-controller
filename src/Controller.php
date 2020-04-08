@@ -136,7 +136,7 @@ class Controller extends BaseController {
         return $this->modelRequest('find', $id);
     }
 
-    protected function modelStore($data) {
+    protected function modelStore(array $data) {
         $data = RoutingModel::clean($data, $this->model);
         $object = $this->getObject($data);
 
@@ -151,12 +151,13 @@ class Controller extends BaseController {
         return $object;
     }
 
-    public function getObject($data) {
+    public function getObject(array $data) {
         $method = '';
         $q = null;
         $id = (isset($data['id'])
             ? $data['id']
             : false);
+
         if ($id !== false) {
             $method = 'find';
             $q = $id;

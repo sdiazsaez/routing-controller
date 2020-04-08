@@ -3,70 +3,71 @@
 namespace Larangular\RoutingController;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 
 trait Model {
 
-    public function hasColumn($column){
+    public function hasColumn(string $column): bool {
         $columns = $this->getColumns();
-        $search = array_search($column, $columns);
+        $search = array_search($column, $columns, true);
         return ($search > -1);
     }
 
-    public function getColumns(){
-        return $this->getConnection()->getSchemaBuilder()->getColumnListing($this->table);
+    public function getColumns(): array {
+        return $this->getConnection()
+                    ->getSchemaBuilder()
+                    ->getColumnListing($this->table);
     }
 
-    public function setFillables($data){
+    public function setFillables($data): void {
         $fillables = $this->getFillable();
-        foreach($fillables as $fillable){
-            if(!array_key_exists($fillable, $data) || $data[$fillable] === '') continue;
+        foreach ($fillables as $fillable) {
+            if (!array_key_exists($fillable, $data) || $data[$fillable] === '') continue;
             $col_data = $data[$fillable];
             $this->setProperty($fillable, $col_data);
         }
     }
 
-    public static function clean($data, $model, $appendId = true){
-        //$model = 'App\\Models\\'.$model;
+    public static function clean(array $data, $model, bool $appendId = true): array {
         $object = new $model();
         $fillables = $object->getFillable();
 
-        foreach($data as $key => $value){
-            if(array_search($key, $fillables) !== false || ($key == 'id' && $appendId)) continue;
+        foreach ($data as $key => $value) {
+            if (($appendId && 'id' === $key) || array_search($key, $fillables, true) !== false) {
+                continue;
+            }
             unset($data[$key]);
         }
         return $data;
     }
 
-    public function setProperty($name, $value){
-        $method = 'set'.ucfirst($name).'Attribute';
-        //if (is_array($value)) $value = json_encode($value);
-        if(method_exists($this, $method)){
+    public function setProperty(string $name, $value): void {
+        $method = 'set' . ucfirst($name) . 'Attribute';
+        if (method_exists($this, $method)) {
             $this->{$method}($value);
-            //call_user_func($this->{$method}, $value);
-        }else{
+        } else {
             $this[$name] = $value;
         }
     }
 
-    static public function hydrate(array $data, $connection = NULL)
-    {
+    public static function hydrate(array $data, $connection = null) {
         // get calling class so we can hydrate using that type
         $klass = get_called_class();
 
         // psuedo hydrate
         $collection = new Collection();
-        foreach ($data as $raw_obj)
-        {
+        foreach ($data as $raw_obj) {
             $model = new $klass;
             $model = $model->newFromBuilder($raw_obj);
-            if (!is_null($connection))
-                $model = $model->setConnection($connection);
+            if (!is_null($connection)) $model = $model->setConnection($connection);
             $collection->add($model);
         }
         return $collection;
 
     }
 
+    public static function getTableName() {
+        $model = with(new static);
+        return $model->getConnection()->getDatabaseName().'.'.$model->getTable();
+    }
 }
