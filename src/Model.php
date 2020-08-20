@@ -70,4 +70,12 @@ trait Model {
         $model = with(new static);
         return $model->getConnection()->getDatabaseName().'.'.$model->getTable();
     }
+
+    public function scopeTrashed($query, string $option = 'without') {
+        if(empty($option) || ($option !== 'with' && $option !== 'only')) {
+            $option = 'without';
+        }
+
+        return $query->{$option . "Trashed"}();
+    }
 }
