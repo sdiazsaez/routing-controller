@@ -28,7 +28,7 @@ class Controller extends BaseController {
     /**
      * Routing request methods
      */
-    public function allowedMethods(): array {
+    public function allowedMethods() {
         return [
             'index',
             'show',
