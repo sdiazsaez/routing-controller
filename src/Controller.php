@@ -2,22 +2,18 @@
 
 namespace Larangular\RoutingController;
 
-use Larangular\RoutingController\{Contracts\RecursiveStoreable,
-    ParametersRequest\QueryBuilderRequest,
-    RecursiveStore\RecursiveStore,
-    MethodRequest\MethodRequest,
-    PaginableRequest,
-    Model as RoutingModel};
-use Larangular\Support\Facades\Instance;
-use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes};
+use Illuminate\Foundation\{Auth\Access\AuthorizesRequests, Bus\DispatchesJobs, Validation\ValidatesRequests};
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Str;
-use Illuminate\Foundation\ {Bus\DispatchesJobs,
-    Validation\ValidatesRequests,
-    Auth\Access\AuthorizesRequests};
-use \Illuminate\Database\Eloquent\{Model,
-    Builder,
-    Collection};
+use Larangular\RoutingController\{Contracts\RecursiveStoreable,
+    MethodRequest\MethodRequest,
+    Model as RoutingModel,
+    ParametersRequest\QueryBuilderRequest,
+    RecursiveStore\RecursiveStore
+};
+use Larangular\Support\Facades\Instance;
 
 class Controller extends BaseController {
     use RoutingRequests, RecursiveStore, QueryBuilderRequest, PaginableRequest, MethodRequest, MakeResponse, AuthorizesRequests, DispatchesJobs, ValidatesRequests;
@@ -32,7 +28,7 @@ class Controller extends BaseController {
     /**
      * Routing request methods
      */
-    public function allowedMethods() {
+    public function allowedMethods(): array {
         return [
             'index',
             'show',
@@ -42,7 +38,7 @@ class Controller extends BaseController {
         ];
     }
 
-    public function entries($where = []) {
+    public function entries(array $where = []) {
         $queryParameters = $this->queryBuilderRequestParameters($where);
         $pagination = $this->paginableRequestParameters($where);
 
@@ -86,6 +82,14 @@ class Controller extends BaseController {
         return $response;
     }
 
+    public function getUpdateMethod(array $params): string {
+        return (array_keys($params) === [
+                'id',
+                'deleted_at',
+            ] && $params['deleted_at'] === null)
+            ? 'restore'
+            : 'save';
+    }
 
     public function search($column, $value) {
         $data = [
@@ -97,6 +101,66 @@ class Controller extends BaseController {
         ];
         return $this->modelRequest('where', $data)
                     ->get();
+    }
+
+    public function getObject(array $data) {
+        $method = '';
+        $q = null;
+        $id = (isset($data['id'])
+            ? $data['id']
+            : false);
+
+        if ($id !== false) {
+            $method = 'find';
+            $q = $id;
+        } else {
+            $method = 'create';
+            $q = $data;
+        }
+
+        $model = $this->modelRequest($method, $q);
+        if (is_null($model)) {
+            $model = $this->modelRequest('create', $data);
+        }
+        return $model;
+    }
+
+    public function count(Request $request) {
+        return $this->modelRequest('count');
+    }
+
+    public function newest(Request $request) {
+        $key = 'updated_at';
+        return $this->instanceModel()
+                    ->where('updated_at', '>', $request->input($key))
+                    ->get();
+        return ($request->has($key))
+            ? $this->instanceModel()
+                   ->where('updated_at', '>', $request->input($key))
+                   ->get()
+            : $this->instanceModel()
+                   ->all();
+        //return $this->modelRequest('where', ['updated_at' => ['>', '2017-01-22 12:30:50']])->get();
+    }
+
+    protected function restore(array $params): array {
+        $id = $params['id'];
+        $object = $this->modelRequest('find', $id);
+        $canSoftDelete = false;
+
+        if (!is_null($object)) {
+            $object->restore();
+            $canSoftDelete = (in_array(SoftDeletes::class, class_uses($object)));
+        }
+
+        return $this->makeResponse([
+            'id'         => $id,
+            'softdelete' => $canSoftDelete,
+            'trashed'    => ($canSoftDelete)
+                ? $object->trashed()
+                : true,
+        ]);
+
     }
 
     protected function getEntries($where = []) {
@@ -151,26 +215,25 @@ class Controller extends BaseController {
         return $object;
     }
 
-    public function getObject(array $data) {
-        $method = '';
-        $q = null;
-        $id = (isset($data['id'])
-            ? $data['id']
-            : false);
-
-        if ($id !== false) {
-            $method = 'find';
-            $q = $id;
-        } else {
-            $method = 'create';
-            $q = $data;
+    protected function queryFetch($query) {
+        if (Instance::instanceOf($query, Builder::class)) {
+            $query = $query->get();
         }
+        return $query;
+    }
 
-        $model = $this->modelRequest($method, $q);
-        if (is_null($model)) {
-            $model = $this->modelRequest('create', $data);
-        }
-        return $model;
+    protected function isEditing($data): bool {
+        return (array_key_exists('id', $data) && $data['id'] > 0);
+    }
+
+    protected function _error($message = '') {
+        return [
+            'data' => [
+                'status'  => false,
+                'message' => $message,
+                'debug'   => debug_backtrace(false, 3),
+            ],
+        ];
     }
 
     private function instanceModel(): Model {
@@ -182,9 +245,9 @@ class Controller extends BaseController {
     private function modelInstanceRequest($method, $data = null) {
         return (is_null($data))
             ? \call_user_func([
-                    $this->instanceModel(),
-                    $method,
-                ])
+                $this->instanceModel(),
+                $method,
+            ])
             : \call_user_func([
                 $this->instanceModel(),
                 $method,
@@ -200,13 +263,6 @@ class Controller extends BaseController {
         return $query;
     }
 
-    protected function queryFetch($query) {
-        if (Instance::instanceOf($query, Builder::class)) {
-            $query = $query->get();
-        }
-        return $query;
-    }
-
     private function getModel() {
         if (!isset($this->model)) {
             $this->model = $this->model();
@@ -215,43 +271,10 @@ class Controller extends BaseController {
         return $this->model;
     }
 
-    protected function isEditing($data): bool {
-        return (array_key_exists('id', $data) && $data['id'] > 0);
-    }
-
-
-    protected function _error($message = '') {
-        return [
-            'data' => [
-                'status'  => false,
-                'message' => $message,
-                'debug'   => debug_backtrace(false, 3),
-            ],
-        ];
-    }
-
     private function customRequest(Request $request) {
         $where = $request->all();
         unset($where['func']);
         return $where;
-    }
-
-    public function count(Request $request) {
-        return $this->modelRequest('count');
-    }
-
-    public function newest(Request $request) {
-        $key = 'updated_at';
-        return $this->instanceModel()
-                    ->where('updated_at', '>', $request->input($key))
-                    ->get();
-        return ($request->has($key))
-            ? $this->instanceModel()
-                   ->where('updated_at', '>', $request->input($key))
-                   ->get()
-            : $this->instanceModel()
-                   ->all();
-        //return $this->modelRequest('where', ['updated_at' => ['>', '2017-01-22 12:30:50']])->get();
     }
 
     private function requestCanBePaginated($method) {
@@ -259,7 +282,8 @@ class Controller extends BaseController {
     }
 
     private function withRelations(&$query) {
-        if (Instance::hasTrait($this->getModel(), 'Jedrzej\Withable\WithableTrait') && Instance::instanceOf($query, Builder::class)) {
+        if (Instance::hasTrait($this->getModel(), 'Jedrzej\Withable\WithableTrait') && Instance::instanceOf($query,
+                Builder::class)) {
             $query = $query->withRelations();
         }
 

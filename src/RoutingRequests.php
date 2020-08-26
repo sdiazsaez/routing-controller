@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: simon
- * Date: 2/16/18
- * Time: 05:43
- */
 
 namespace Larangular\RoutingController;
 
@@ -21,6 +15,8 @@ trait RoutingRequests {
     abstract public function save($data);
 
     abstract public function delete($id);
+
+    abstract public function getUpdateMethod(array $params): string;
 
     public function index(Request $request) {
         $this->prepareRequest(__FUNCTION__);
@@ -46,7 +42,9 @@ trait RoutingRequests {
 
         $data = $request->all();
         $data['id'] = $id;
-        return $this->save($data);
+
+        $method = $this->getUpdateMethod($data);
+        return $this->{$method}($data);
     }
 
     public function destroy($id) {
