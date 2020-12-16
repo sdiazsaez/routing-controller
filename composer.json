@@ -10,9 +10,9 @@
     ],
     "require": {
         "php": ">=7.1",
-        "illuminate/support": "~5.8.0|^6.0|^7.0|^8.0",
-        "illuminate/routing": "~5.8.0|^6.0|^7.0|^8.0",
-        "larangular/support": "^0.1.0|^0.2.0",
+        "illuminate/support": "^7.0|^8.0",
+        "illuminate/routing": "^7.0|^8.0",
+        "larangular/support": "^0.2.0",
         "genealabs/laravel-model-caching": "~0.4.0|^0.7.0|^0.10.0|^0.11.0"
     },
     "autoload": {
