@@ -51,8 +51,10 @@ class Controller extends BaseController {
     }
 
     public function entry($id) {
-        $query = $this->getEntry($id);
-        return $this->makeResponse($this->queryFetch($query));
+        $response = (\is_object($id))
+            ? $id
+            : $this->queryFetch($this->getEntry($id));
+        return $this->makeResponse($response);
     }
 
     public function save($data) {
