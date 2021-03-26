@@ -2,7 +2,7 @@
 
 namespace Larangular\RoutingController;
 
-use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes};
+use Illuminate\Database\Eloquent\{Builder, Collection, Model, SoftDeletes};
 use Illuminate\Foundation\{Auth\Access\AuthorizesRequests, Bus\DispatchesJobs, Validation\ValidatesRequests};
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -51,9 +51,10 @@ class Controller extends BaseController {
     }
 
     public function entry($id) {
-        $response = (\is_object($id))
-            ? $id
-            : $this->queryFetch($this->getEntry($id));
+        $response = (\is_numeric($id))
+            ? $this->queryFetch($this->getEntry($id))
+            : (Instance::instanceOf($id, Collection::class) ? $id->first() : $id);
+
         return $this->makeResponse($response);
     }
 
