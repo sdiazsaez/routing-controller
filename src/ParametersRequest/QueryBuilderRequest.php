@@ -37,7 +37,8 @@ trait QueryBuilderRequest {
             'select',
             'limit',
             'with',
-            'trashed'
+            'trashed',
+            'count'
         ];
     }
 
