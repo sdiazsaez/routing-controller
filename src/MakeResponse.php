@@ -29,9 +29,13 @@ trait MakeResponse {
     private function makeResource($resourceClass, $data) {
         if (Instance::instanceOf($data, Collection::class)) {
             return $resourceClass::collection($data);
-        } else {
-            return new $resourceClass($data);
         }
+
+        if (is_scalar($data)) {
+            return ['data' => [$data]];
+        }
+
+        return new $resourceClass($data);
     }
 
     private function requestAjax() {
