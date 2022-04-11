@@ -311,6 +311,8 @@ class Controller extends BaseController {
                 //return $self->callModelTraitMethod($item, Appendable::class, 'appends', $args);
             });
         }
+
+        return $collection;
     }
 
     private function bindOrId($id) {
