@@ -303,12 +303,11 @@ class Controller extends BaseController {
         return $query;
     }
 
-    private function afterQueryFetch(Collection $collection, array $args = []) {
+    private function afterQueryFetch($collection, array $args = []) {
         if (Instance::hasTrait($this->getModel(), Appendable::class)) {
             $self = $this;
             return $collection->each(static function ($item) use ($args, $self) {
                 return $item->appends($args);
-                //return $self->callModelTraitMethod($item, Appendable::class, 'appends', $args);
             });
         }
 
