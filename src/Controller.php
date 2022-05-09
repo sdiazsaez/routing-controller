@@ -304,7 +304,7 @@ class Controller extends BaseController {
     }
 
     private function afterQueryFetch($collection, array $args = []) {
-        if (Instance::hasTrait($this->getModel(), Appendable::class)) {
+        if (Instance::hasTrait($this->getModel(), Appendable::class) && Instance::instanceOf($collection, Collection::class)) {
             $self = $this;
             return $collection->each(static function ($item) use ($args, $self) {
                 return $item->appends($args);
