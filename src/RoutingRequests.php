@@ -35,7 +35,7 @@ trait RoutingRequests
         abort(403, 'Unauthorized');
     }
 
-    abstract public function entries($where = []);
+    abstract public function entries(array $where = []);
 
     public function show($id)
     {
