@@ -13,8 +13,10 @@ use Larangular\RoutingController\{Contracts\RecursiveStoreable,
     ParametersRequest\ParametersRequest,
     ParametersRequest\QueryBuilderRequest,
     RecursiveStore\RecursiveStore,
-    Traits\Appendable};
+    Traits\Appendable
+};
 use Larangular\Support\Facades\Instance;
+use Msd\Quotes\Models\Quote;
 
 class Controller extends BaseController {
     use RoutingRequests, RecursiveStore, QueryBuilderRequest, PaginableRequest, MethodRequest, MakeResponse, AuthorizesRequests, DispatchesJobs, ValidatesRequests;
@@ -67,6 +69,7 @@ class Controller extends BaseController {
         if (Instance::hasInterface($this, RecursiveStoreable::class)) {
             $data = $this->recursiveStore($data);
         }
+
         $response = $this->modelStore($data);
         return $this->modelRequest('find', $response->id);
     }
@@ -204,6 +207,41 @@ class Controller extends BaseController {
     }
 
     protected function modelStore(array $data) {
+        // Clean the data using your existing logic
+        $data = RoutingModel::clean($data, $this->model);
+
+        // Get the current model instance
+        $model = $this->instanceModel();
+
+        // Determine unique fields if the method exists
+        $uniqueCriteria = [];
+        if (method_exists($model, 'getUniqueFields')) {
+            $uniqueFields = $model->getUniqueFields();
+            if (!empty($uniqueFields)) {
+                // Prepare unique criteria from the data
+                $uniqueCriteria = array_intersect_key($data, array_flip($uniqueFields));
+            }
+        }
+
+        $searchCriteria = !empty($uniqueCriteria) ? $uniqueCriteria : ['id' => $data['id'] ?? null];
+        // Use updateOrCreate with the determined unique criteria
+        return $this->updateOrCreate($model, $searchCriteria, $data);
+        //$response = $model::updateOrCreate($searchCriteria, $data);
+        //return $response;
+    }
+
+    private function updateOrCreate($model, $attributes, array $values) {
+        if (!is_array($attributes) || empty($attributes) || $attributes['id'] == null) {
+            return $model->create($values);
+        }
+
+        $entry = $model->find($attributes['id']);
+        $r = $entry->update($values);
+        return $entry;
+    }
+
+
+    protected function _modelStore(array $data) {
         $data = RoutingModel::clean($data, $this->model);
         $object = $this->getObject($data);
 
@@ -280,8 +318,10 @@ class Controller extends BaseController {
     }
 
     private function instanceModel(): Model {
-        $model = $this->getModel();
-        if (!isset($this->instanceModel)) $this->instanceModel = new $model;
+        if (!isset($this->instanceModel)) {
+            $model = $this->getModel();
+            $this->instanceModel = new $model;
+        }
         return $this->instanceModel;
     }
 
@@ -304,7 +344,8 @@ class Controller extends BaseController {
     }
 
     private function afterQueryFetch($collection, array $args = []) {
-        if (Instance::hasTrait($this->getModel(), Appendable::class) && Instance::instanceOf($collection, Collection::class)) {
+        if (Instance::hasTrait($this->getModel(), Appendable::class) && Instance::instanceOf($collection,
+                Collection::class)) {
             $self = $this;
             return $collection->each(static function ($item) use ($args, $self) {
                 return $item->appends($args);
@@ -342,4 +383,3 @@ class Controller extends BaseController {
         return ($method === 'where' || $method === 'all');
     }
 }
-
