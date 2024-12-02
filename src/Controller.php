@@ -230,16 +230,29 @@ class Controller extends BaseController {
         //return $response;
     }
 
-    private function updateOrCreate($model, $attributes, array $values) {
-        if (!is_array($attributes) || empty($attributes) || $attributes['id'] == null) {
-            return $model->create($values);
+    private function updateOrCreate($model, array $attributes, array $values) {
+        if (empty($attributes)) {
+            throw new InvalidArgumentException("Attributes cannot be empty.");
         }
 
-        $entry = $model->find($attributes['id']);
-        $r = $entry->update($values);
+        // Check for ID in attributes and retrieve the entry by ID first if it exists
+        if (!empty($attributes['id'])) {
+            $entry = $model->find($attributes['id']);
+        } else {
+            // Otherwise, look for the entry using the other attributes
+            $entry = $model->where($attributes)->first();
+        }
+
+        if ($entry) {
+            // Update the existing entry
+            $entry->update($values);
+        } else {
+            // Create a new entry if none exists
+            $entry = $model->create(array_merge($attributes, $values));
+        }
+
         return $entry;
     }
-
 
     protected function _modelStore(array $data) {
         $data = RoutingModel::clean($data, $this->model);
