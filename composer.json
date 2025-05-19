@@ -14,7 +14,7 @@
         "illuminate/routing": "*",
         "larangular/support": "^0.2.0",
         "genealabs/laravel-model-caching": "^0.11.0|^0.12.0|^0.13.0|^11.0|^12.0",
-        "cosmoscript/notification-control": "0.0.1",
+        "cosmoscript/notification-control": "*"
     },
     "autoload": {
         "psr-4": {
