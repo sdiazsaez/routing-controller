@@ -17,6 +17,7 @@ use Larangular\RoutingController\{Contracts\RecursiveStoreable,
 };
 use Larangular\Support\Facades\Instance;
 use Msd\Quotes\Models\Quote;
+use Cosmoscript\NotificationControl\NotificationControl;
 
 class Controller extends BaseController {
     use RoutingRequests, RecursiveStore, QueryBuilderRequest, PaginableRequest, MethodRequest, MakeResponse, AuthorizesRequests, DispatchesJobs, ValidatesRequests;
@@ -66,12 +67,22 @@ class Controller extends BaseController {
     }
 
     public function save($data) {
-        if (Instance::hasInterface($this, RecursiveStoreable::class)) {
-            $data = $this->recursiveStore($data);
-        }
-
-        $response = $this->modelStore($data);
-        return $this->modelRequest('find', $response->id);
+        $suppressNotifications = $data['_suppress_notifications'] ?? false;
+    
+        $callback = function () use ($data) {
+            $dataCopy = $data;
+    
+            if (Instance::hasInterface($this, RecursiveStoreable::class)) {
+                $dataCopy = $this->recursiveStore($dataCopy);
+            }
+    
+            $response = $this->modelStore($dataCopy);
+            return $this->modelRequest('find', $response->id);
+        };
+    
+        return $suppressNotifications
+            ? NotificationControl::whileDisabled($callback)
+            : $callback();
     }
 
     public function getObject(array $data) {
