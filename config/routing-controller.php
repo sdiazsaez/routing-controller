@@ -2,14 +2,14 @@
 
 return [
 
-    reserved_query_keywords => [
+    'reserved_query_keywords' => [
         'orderBy' => 'orderBy',
         'orderByDesc' => 'orderByDesc',
         'limit' => 'limit',
         'with' => 'with',
         'trashed' => 'trashed',
         'count' => 'count',
-        'select' => 'select'
+        'select' => 'select',
         'where' => 'where',
     ]
 
