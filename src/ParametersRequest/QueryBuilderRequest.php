@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: simon
- * Date: 9/26/18
- * Time: 10:00
- */
 
 namespace Larangular\RoutingController\ParametersRequest;
 
@@ -15,31 +9,52 @@ trait QueryBuilderRequest {
 
     protected function queryBuilderRequestParameters(&$parameters): array {
         return ParametersRequest::filter($parameters, $this->queryBuilderKeywords());
+        return ParametersRequest::filter($parameters, array_keys(config('routing-controller.reserved_query_keywords', [])));
     }
+    
 
-    protected function queryBuilderRequest(&$query, $parameters) {
-        if (count($parameters) > 0) {
-            foreach ($this->queryBuilderKeywords() as $keyword) {
-                if (array_key_exists($keyword, $parameters)) {
-                    $query = $query->{$keyword}($parameters[$keyword]);
+    protected function queryBuilderRequest(Builder $query, array $parameters): Builder {
+        $keywords = config('routing-controller.reserved_query_keywords', []);
+
+        foreach ($keywords as $keyword => $config) {
+            // Allow flat format: 'limit' => 'limit'
+            if (is_string($config)) {
+                $method = $config;
+                $inputKey = $keyword;
+                $guardTrait = null;
+                $guard = null;
+            } else {
+                $method = $config['method'] ?? $keyword;
+                $inputKey = $config['input_key'] ?? $keyword;
+                $guardTrait = $config['guard_trait'] ?? null;
+                $guard = $config['guard'] ?? null;
+            }
+
+            if (!array_key_exists($inputKey, $parameters)) {
+                continue;
+            }
+
+            // Only get the model if there's a guard to check
+            if ($guardTrait || is_callable($guard)) {
+                $model = $query->getModel();
+
+                if ($guardTrait && !$model->hasTrait($guardTrait)) {
+                    continue;
+                }
+
+                if (is_callable($guard) && !$guard($model)) {
+                    continue;
                 }
             }
+
+            if (!method_exists($query, $method)) {
+                continue;
+            }
+
+            $query = $query->$method($parameters[$inputKey]);
         }
 
         return $query;
-    }
-
-    private function queryBuilderKeywords(): array {
-        return [
-            'orderBy',
-            'orderByDesc',
-            'where',
-            'select',
-            'limit',
-            'with',
-            'trashed',
-            'count'
-        ];
     }
 
 }
