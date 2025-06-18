@@ -2,18 +2,13 @@
 
 namespace Larangular\RoutingController\ParametersRequest;
 
-use Larangular\RoutingController\Contracts\IGatewayModel;
-use Larangular\RoutingController\ParametersRequest\ParametersRequest;
-
 trait QueryBuilderRequest {
 
     protected function queryBuilderRequestParameters(&$parameters): array {
-        return ParametersRequest::filter($parameters, $this->queryBuilderKeywords());
         return ParametersRequest::filter($parameters, array_keys(config('routing-controller.reserved_query_keywords', [])));
     }
-    
 
-    protected function queryBuilderRequest(Builder $query, array $parameters): Builder {
+    protected function queryBuilderRequest(&$query, $parameters) {
         $keywords = config('routing-controller.reserved_query_keywords', []);
 
         foreach ($keywords as $keyword => $config) {
@@ -38,16 +33,20 @@ trait QueryBuilderRequest {
             if ($guardTrait || is_callable($guard)) {
                 $model = $query->getModel();
 
-                if ($guardTrait && !$model->hasTrait($guardTrait)) {
+                if ($guardTrait && !in_array($guardTrait, class_uses_recursive($model))) {
                     continue;
                 }
+
 
                 if (is_callable($guard) && !$guard($model)) {
                     continue;
                 }
             }
 
-            if (!method_exists($query, $method)) {
+            $builderHasMethod = method_exists($query, $method);
+            $modelHasScope = method_exists($query->getModel(), 'scope' . ucfirst($method));
+
+            if (! $builderHasMethod && ! $modelHasScope) {
                 continue;
             }
 
