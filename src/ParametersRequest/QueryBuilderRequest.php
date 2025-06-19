@@ -2,13 +2,15 @@
 
 namespace Larangular\RoutingController\ParametersRequest;
 
+use Illuminate\Database\Eloquent\Builder;
+
 trait QueryBuilderRequest {
 
     protected function queryBuilderRequestParameters(&$parameters): array {
         return ParametersRequest::filter($parameters, array_keys(config('routing-controller.reserved_query_keywords', [])));
     }
 
-    protected function queryBuilderRequest(&$query, $parameters) {
+    protected function queryBuilderRequest(Builder &$query, $parameters) {
         $keywords = config('routing-controller.reserved_query_keywords', []);
 
         foreach ($keywords as $keyword => $config) {
@@ -37,16 +39,12 @@ trait QueryBuilderRequest {
                     continue;
                 }
 
-
                 if (is_callable($guard) && !$guard($model)) {
                     continue;
                 }
             }
 
-            $builderHasMethod = method_exists($query, $method);
-            $modelHasScope = method_exists($query->getModel(), 'scope' . ucfirst($method));
-
-            if (! $builderHasMethod && ! $modelHasScope) {
+            if (! method_exists($query, $method) && ! $query->hasNamedScope($method) && !is_callable([$query, $method])) {
                 continue;
             }
 
