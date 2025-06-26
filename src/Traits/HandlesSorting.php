@@ -62,8 +62,8 @@ trait HandlesSorting
     {
         $model = $this;
 
-        $defaults    = config('sorting.default_sortable', []);
-        $blocked     = config('sorting.default_unsortable', []);
+        $defaults    = config('routing-controller.default_sortable', []);
+        $blocked     = config('routing-controller.default_unsortable', []);
         $modelAllow  = property_exists($model, 'sortable') ? $model->sortable : [];
         $modelBlock  = property_exists($model, 'unsortable') ? $model->unsortable : [];
 
