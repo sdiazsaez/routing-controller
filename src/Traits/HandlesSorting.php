@@ -11,9 +11,10 @@ trait HandlesSorting
      * Apply flexible sorting from a string like:
      *   name:desc,id,fase.status:asc
      */
-    public function scopeApplyOrderBy(Builder $query, string $value): Builder
+    public function scopeApplyOrderBy(Builder $query, string|array $value): Builder
     {
-        $parts = array_filter(explode(',', $value));
+        $parts = is_array($value) ? $value : explode(',', $value);
+        $parts = array_filter($parts);
 
         foreach ($parts as $part) {
             [$column, $direction] = array_pad(explode(':', $part), 2, 'asc');
